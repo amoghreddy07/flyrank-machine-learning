@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlyRank Content Refresh Modeling: Technical Case Study</title>
+    <meta name="description" content="A machine learning approach to predicting content decline and prioritizing editorial refresh candidates.">
+    <style>
+        /* CSS reset and base styles */
+        :root {
+            --bg-color: #fafafa;
+            --text-color: #2c313a;
+            --heading-color: #1a1e23;
+            --accent-color: #0F52BA;
+            --muted-color: #666;
+            --border-color: #e1e4e8;
+            --container-width: 760px;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 1.125rem;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: Inter, system-ui, -apple-system, sans-serif;
+            color: var(--heading-color);
+            line-height: 1.3;
+            margin-top: 2em;
+            margin-bottom: 0.75em;
+            font-weight: 600;
+        }
+
+        h1 {
+            font-size: 2.25rem;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+        }
+
+        h2 {
+            font-size: 1.75rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.3em;
+        }
+
+        h3 {
+            font-size: 1.35rem;
+        }
+
+        a {
+            color: var(--accent-color);
+            text-decoration: none;
+            border-bottom: 1px solid rgba(15, 82, 186, 0.3);
+            transition: border-bottom-color 0.2s ease;
+        }
+
+        a:hover {
+            border-bottom-color: var(--accent-color);
+        }
+
+        p {
+            margin-bottom: 1.25em;
+        }
+
+        /* Container and structure */
+        .container {
+            max-width: var(--container-width);
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        .header {
+            margin-bottom: 4rem;
+        }
+
+        .abstract {
+            font-family: Inter, system-ui, -apple-system, sans-serif;
+            font-size: 1.25rem;
+            line-height: 1.5;
+            font-weight: 400;
+            color: var(--heading-color);
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--accent-color);
+            margin-bottom: 3rem;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin-bottom: 1.5em;
+            padding-left: 2rem;
+        }
+
+        li {
+            margin-bottom: 0.5em;
+        }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+            margin: 2rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #fff;
+            border: 1px solid var(--border-color);
+        }
+
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            font-family: Inter, system-ui, -apple-system, sans-serif;
+            font-size: 0.95rem;
+        }
+
+        th {
+            background-color: #f6f8fa;
+            font-weight: 600;
+            color: var(--heading-color);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Charts */
+        figure {
+            margin: 2.5rem 0;
+            background: #fff;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        figure img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        figcaption {
+            font-family: Inter, system-ui, -apple-system, sans-serif;
+            font-size: 0.9rem;
+            color: var(--muted-color);
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 5rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.95rem;
+            color: var(--muted-color);
+            font-family: Inter, system-ui, -apple-system, sans-serif;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            :root {
+                font-size: 16px;
+            }
+            .container {
+                padding: 1.5rem 1rem;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+            .abstract {
+                font-size: 1.1rem;
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Predicting Content Decay: A Machine Learning Approach to Editorial Prioritization</h1>
+            
+            <div class="abstract">
+                <strong>Abstract:</strong> This research evaluates whether historical search visibility and content staleness can predict imminent search traffic decline. We modeled this problem as a binary classification task using a 30,000-row anonymized cross-sectional sample from the FlyRank warehouse. A Logistic Regression model outperformed a hard-coded heuristic baseline on a client-grouped holdout split. The model improved Precision@50 from 0.400 to 0.820. The resulting ranked queue provides quantitative decision-support for editorial teams to prioritize preventative updates on high-value, at-risk content.
+            </div>
+        </header>
+
+        <main>
+            <section id="introduction">
+                <h2>Introduction</h2>
+                <p>Editorial teams face a resource allocation problem: they must balance publishing new articles with updating old ones. As content ages, it naturally accumulates outdated facts and loses "freshness," leading to a gradual decay in search engine visibility. However, blindly updating every old page wastes resources, while waiting for traffic to hit zero means losing hard-earned audience share.</p>
+                <p>This study evaluates whether machine learning can accurately identify which pages are currently entering a state of decline. By catching content at the inflection point—where it still generates impressions but is losing competitive position—we can direct limited editorial effort to where it has the highest potential ROI.</p>
+            </section>
+
+            <section id="data">
+                <h2>Data</h2>
+                <p>The models were trained on a 30,000-row anonymized, cross-sectional dataset representing a 90-day observation window. This is a representative sample drawn from the larger underlying FlyRank internship warehouse (v20260703, ~79 million daily performance rows across 17 months). We explicitly distinguish this 30k training snapshot from the full warehouse to ensure transparent evaluation scope.</p>
+                <p>The unit of analysis is a single content item. To prevent memorization and ensure public safety, client domains, URLs, search queries, and raw text were stripped and replaced with pseudonymous IDs (e.g., <code>client_id</code>, <code>content_id</code>). The dataset contains historical engagement metrics (impressions, clicks, average position), structural properties (word count), and age indicators (days since last update, content age).</p>
+            </section>
+
+            <section id="methodology">
+                <h2>Methodology</h2>
+                
+                <h3>Problem Formulation</h3>
+                <p>We framed the task as a binary classification problem, where the model outputs a probability that is then used to rank candidates for review.</p>
+
+                <h3>Label Definition</h3>
+                <p>The target variable, <code>is_declining</code>, is defined as <code>1</code> when the page's directional trend is categorized as "down." The base rate of decline in our dataset is 54.2%.</p>
+
+                <h3>Features and Leakage Exclusions</h3>
+                <p>The models relied purely on trailing 90-day observation window metrics. Features included log-transformed impressions and clicks, average position, click-through rate, and staleness metrics. We strictly excluded variables that mathematically derive the target (<code>trend_direction</code>, <code>trend_pct</code>) and pseudonymous identifiers (<code>client_id</code>, <code>content_id</code>) to prevent target leakage and client memorization.</p>
+
+                <h3>Baseline Construction</h3>
+                <p>We built a transparent, rule-based baseline to benchmark model performance. A page was flagged for refresh if it was "stale" (not updated in ≥ 91 days), "visible" (≥ 100 impressions in 90 days), and in "striking distance" (average position 4–20). This rule generated a heuristic score used for ranking.</p>
+
+                <h3>Models and Validation Strategy</h3>
+                <p>We trained Logistic Regression and Random Forest classifiers. To ensure an honest evaluation that mimics real-world deployment on new clients, the primary comparison uses a grouped validation split (GroupShuffleSplit by <code>client_id</code>). We also conducted a secondary age-ordered (time-aware) validation experiment to proxy temporal deployment.</p>
+            </section>
+
+            <section id="results">
+                <h2>Results</h2>
+                <p>On the primary grouped-client holdout split, the Logistic Regression model outperformed both the Random Forest and the baseline heuristic, achieving a Precision@50 of 0.820 (compared to the baseline's 0.400). The test-set base rate was 0.511.</p>
+                
+                <figure>
+                    <img src="assets/charts/precision_comparison.png" alt="Bar chart showing Logistic Regression achieving 0.820 Precision@50 compared to the baseline's 0.400 on the grouped client split.">
+                    <figcaption><strong>Precision@50 Comparison:</strong> Logistic Regression more than doubles the top-50 ranking accuracy compared to the hard-coded heuristic baseline. (Test Base Rate: 0.511)</figcaption>
+                </figure>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Model</th>
+                                <th>Precision@50</th>
+                                <th>ROC-AUC</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Week 4 Baseline</td>
+                                <td>0.400</td>
+                                <td>0.506</td>
+                                <td>Hard-coded heuristic on stale/visible/striking</td>
+                            </tr>
+                            <tr>
+                                <td>Random Forest</td>
+                                <td>0.560</td>
+                                <td>0.600</td>
+                                <td>Depth-6 tree ensemble</td>
+                            </tr>
+                            <tr>
+                                <td>Logistic Regression</td>
+                                <td><strong>0.820</strong></td>
+                                <td><strong>0.636</strong></td>
+                                <td>Weighted linear model</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <figure>
+                    <img src="assets/charts/roc_auc_comparison.png" alt="Bar chart showing Logistic Regression achieving 0.636 ROC-AUC compared to the baseline's 0.506.">
+                    <figcaption><strong>ROC-AUC Comparison:</strong> The Logistic Regression model demonstrates stronger overall discriminative ability across the entire threshold curve.</figcaption>
+                </figure>
+
+                <h3>Validation Strategy Audit</h3>
+                <p>In a secondary experiment, we evaluated the Logistic Regression model using an age-ordered, time-aware split (training on the 80% older pages, testing on the 20% newer pages) to more closely mimic the directional flow of time. Under this age-ordered split, Precision@50 increased to 0.880, providing an additional validation view of the model's ranking performance.</p>
+
+                <figure>
+                    <img src="assets/charts/validation_improvement.png" alt="Bar chart showing the difference in Precision@50 between the Grouped Split (0.820) and Age-Ordered Split (0.880).">
+                    <figcaption><strong>Validation Impact:</strong> Precision@50 estimates for the Logistic Regression model under different honest evaluation strategies.</figcaption>
+                </figure>
+            </section>
+
+            <section id="limitations">
+                <h2>Limitations & Honest Framing</h2>
+                <p>This research utilizes observational cross-sectional data. We cannot make causal claims; the model does not prove that updating a page will mathematically cause a traffic recovery. The model merely observes that pages with specific historical engagement and staleness patterns are highly associated with traffic decline.</p>
+                <p>Furthermore, because the dataset strips raw text and URLs, the model possesses no semantic understanding of content quality, search intent shifts, or factual accuracy. An editor must still investigate *why* a flagged page is declining before executing a refresh.</p>
+            </section>
+
+            <section id="recommendations">
+                <h2>Ranked Recommendations / Action Playbook</h2>
+                <p>The model outputs a ranked probability queue designed for decision-support, mapping scores to specific editorial workflows:</p>
+                <ul>
+                    <li><strong>High Priority Refresh:</strong> Pages with strong historical visibility (>1000 impressions) showing a high model probability of decline (>75%). Action: Comprehensive editorial review and structural update.</li>
+                    <li><strong>Standard Refresh Review:</strong> Pages with high decline risk (>75%) but lower historical volume. Action: Evaluate if the topic warrants the effort; otherwise, consolidate.</li>
+                    <li><strong>Preventative Update:</strong> Pages that are stale (>180 days) but retain high traffic. Action: Light refresh to update facts and dates before decay hits.</li>
+                </ul>
+                <p>This queue serves to guide human attention; it should not be hooked up to an automated CMS publishing system.</p>
+            </section>
+
+            <section id="reproducibility">
+                <h2>Reproducibility</h2>
+                <p>The full analytical workflow is available in the <a href="https://github.com/amoghreddy07/flyrank-machine-learning" target="_blank" rel="noopener">FlyRank Machine Learning repository</a>. The final modeling logic, data preparation, and evaluation steps are documented in the <a href="https://github.com/amoghreddy07/flyrank-machine-learning/blob/main/work/notebooks/capstone.ipynb" target="_blank" rel="noopener">capstone notebook</a>.</p>
+                <p>Random states were fixed (`random_state=42`) across train-test splits and classifiers to ensure reproducible metrics.</p>
+            </section>
+        </main>
+
+        <footer>
+            <section id="acknowledgments">
+                <h2>Acknowledgments & Data Credit</h2>
+                <p><a href="https://flyrank.ai" target="_blank" rel="noopener">Built on the FlyRank ML Internship dataset</a>.</p>
+            </section>
+        </footer>
+    </div>
+</body>
+</html>

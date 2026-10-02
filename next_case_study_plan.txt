@@ -1,0 +1,32 @@
+# Next Case Study — Portfolio Update Plan
+
+## Where the next case will go
+
+My next case study will be added to my portfolio alongside my existing technical project work. I will use the same three-beat structure:
+
+1. Problem — What I wanted to achieve or the challenge I was addressing.
+2. What I did — The activities, decisions, tools, and work I carried out.
+3. What came of it — The outcomes, evidence, learnings, and impact that can be verified.
+
+## How I will add it
+
+1. Collect the strongest evidence from the experience: activities, event work, projects, screenshots, posts, and measurable outcomes.
+2. Write the case study using Problem → What I did → What came of it.
+3. Lead with the strongest concrete evidence rather than a generic description of the role.
+4. Add the case study to my existing portfolio alongside my technical projects.
+5. Review it for clarity and public-safe information.
+6. Publish it and verify that the page and supporting links work.
+
+## Next piece of work
+
+**Google Student Ambassador Journey**
+
+I will turn my Google Student Ambassador experience into a portfolio case study, documenting the journey from being selected as an ambassador through the activities, community/event work, and outcomes I can verify.
+
+## Reminder
+
+I will set a reminder to add the Google Student Ambassador case study to my portfolio.
+
+## Build context
+
+I will keep my existing Claude Project so that its accumulated voice, stack, and identity context can be reused when creating the next case study.
